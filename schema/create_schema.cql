@@ -1,13 +1,15 @@
-CREATE KEYSPACE IF NOT EXISTS Cluster
+CREATE KEYSPACE IF NOT EXISTS DutchAuction
   WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 3 };
 
-USE Cluster;
+USE DutchAuction;
 
 CREATE TABLE LoggedUsers (
   username varchar,
   nodeId varchar,
   PRIMARY KEY(username)
 );
+
+
 
 CREATE TABLE Zad4 (
   id int,

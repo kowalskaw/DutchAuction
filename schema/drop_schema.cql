@@ -1,1 +1,2 @@
-DROP KEYSPACE Test;
+USE DutchAucton;
+DROP KEYSPACE DutchAuction;
