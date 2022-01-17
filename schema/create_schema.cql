@@ -1,7 +1,7 @@
-CREATE KEYSPACE IF NOT EXISTS Cluster2
+CREATE KEYSPACE IF NOT EXISTS Cluster
   WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 3 };
 
-USE Cluster2;
+USE Cluster;
 
 CREATE TABLE LoggedUsers (
   username varchar,
