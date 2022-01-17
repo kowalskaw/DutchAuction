@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.Random;
 import com.datastax.driver.core.Row;
-import com.codahale.metrics.Timer;
 import com.datastax.driver.core.ResultSet;
 
 public class CounterThread implements Runnable {
@@ -27,7 +26,7 @@ public class CounterThread implements Runnable {
             Random rnd = new Random();
             Row row;
             ResultSet rs;
-            
+
             long startTime = System.currentTimeMillis();
             for (int i=0; i<40000; i++){
                 SESSION.updatePageViewCounts(URL);
