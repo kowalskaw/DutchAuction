@@ -1,7 +1,7 @@
 package dutchauction;
 
-import cassdemo.backend.BackendException;
-import cassdemo.backend.BackendSession;
+import dutchauction.backend.BackendException;
+import dutchauction.backend.BackendSession;
 
 import java.io.IOException;
 import java.util.Properties;

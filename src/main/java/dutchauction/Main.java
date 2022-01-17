@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 
-import cassdemo.backend.BackendException;
-import cassdemo.backend.BackendSession;
+import dutchauction.backend.BackendException;
+import dutchauction.backend.BackendSession;
 
 public class Main {
 
