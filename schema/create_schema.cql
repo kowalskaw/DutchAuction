@@ -3,8 +3,9 @@ CREATE KEYSPACE IF NOT EXISTS DutchAuction
 
 USE DutchAuction;
 
-CREATE TABLE LoggedUsers (
+CREATE TABLE Users (
   username varchar,
+  password varchar,
   nodeId varchar,
   PRIMARY KEY(username)
 );
@@ -13,11 +14,13 @@ CREATE TABLE Auction (
   id bigint,
   product_name varchar,
   product_description varchar,
-  price_drop_fractor double,  // constant, determines price drop
+  price_drop_factor double,  // constant, determines price drop
   epoch bigint,     // number of epochs
   epoch_period int, // time that epoch lasts
   bid_price double, // at that price, user will automatically bid auction
   winner varchar,
+  bidders map<varchar, tuple(double, timestamp)>, // set of bidders that take part in the auction <bidder_username, (bidder_price, timestamp)>
+  owner varchar, // creator of the auction
   PRIMARY KEY(id)
 );
 

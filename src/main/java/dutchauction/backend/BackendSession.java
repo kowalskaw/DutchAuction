@@ -41,6 +41,10 @@ public class BackendSession {
 	private static PreparedStatement SELECT_USER;
 	private static PreparedStatement INSERT_USER;
 	private static PreparedStatement DELETE_USER;
+	private static PreparedStatement SELECT_AUCTION;
+	private static PreparedStatement INSERT_AUCTION; //init Auction
+	private static PreparedStatement UPDATE_AUCTION; //update only soe columns
+
 	private static PreparedStatement INC_COUNTER;
 	private static PreparedStatement SELECT_COUNTER;
 	private static PreparedStatement DELETE_ALL_COUNTER;
@@ -52,13 +56,19 @@ public class BackendSession {
 
 	private void prepareStatements() throws BackendException {
 		try {
-			SELECT_USER = session.prepare("SELECT * FROM LoggedUsers WHERE username = ?;");
+			SELECT_USER = session.prepare("SELECT * FROM Users WHERE username = ?;");
 			INSERT_USER = session
-					.prepare("INSERT INTO LoggedUsers (username, nodeId) VALUES (?, ?);");
-			DELETE_USER = session.prepare("DELETE FROM LoggedUsers WHERE username = ?;");
+					.prepare("INSERT INTO Users (username, nodeId) VALUES (?, ?);");
+			DELETE_USER = session.prepare("DELETE FROM Users WHERE username = ?;");
 			INC_COUNTER = session.prepare("UPDATE PageViewCounts SET views = views + 1 WHERE url=?");
 			SELECT_COUNTER = session.prepare("SELECT * FROM PageViewCounts WHERE url = ?;");
 			DELETE_ALL_COUNTER = session.prepare("TRUNCATE PageViewCounts;");
+
+			SELECT_AUCTION = session.prepare("SELECT * FROM Auction WHERE id = ?;");
+			INSERT_AUCTION = session
+					.prepare("INSERT INTO Auction (product_name, product_description, price_drop_factor, epoch, epoch_period, bid_price, winner) VALUES (?, ?);");
+
+
 		} catch (Exception e) {
 			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
 		}

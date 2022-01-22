@@ -1,23 +1,32 @@
 package dutchauction;
 
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import dutchauction.backend.BackendException;
 import dutchauction.backend.BackendSession;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.ResultSet;
 
 import java.util.Random;
 
-public class BidderThread implements Runnable {
+public class AuctionOwner implements Runnable {
     private final BackendSession SESSION;
     private final String URL;
 
-    public BidderThread(BackendSession SESSION, String URL) {
+    public AuctionOwner(BackendSession SESSION, String URL) {
         this.SESSION = SESSION;
         this.URL = URL;
     }
 
     @Override
     public void run() {
+        // moze miec jedna aukcje na raz
+        // w konstruktorze mozna podac parametry aukcji
+        // tworzy aukcje
+        // co okres T sprawdza czy biddersi sie kwalifikuja do wygrania aukcji
+        // wybiera tego o najwczesniejszym timestampie
+        // jesli timestampy sie pokrywaja u kilku, to losuje jednego z nich
+        // ustawia w polu winner username zwycieskiego biddera
+        // konczy aukcje
+
         try {
             SESSION.truncatePageViewCounts();
         } catch (BackendException e) {
@@ -43,4 +52,5 @@ public class BidderThread implements Runnable {
             System.out.println("URL: " + url + " - COUNTER: " + counter);
         }
     }
+
 }
