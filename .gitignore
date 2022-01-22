@@ -1,5 +1,10 @@
 .idea
 .gradle
-/build/
+build/
 !gradle-wrapper.jar
 .gradletasknamecache
+schema/commitlog
+schema/data
+schema/hints
+schema/saved_caches
+.DS_Store

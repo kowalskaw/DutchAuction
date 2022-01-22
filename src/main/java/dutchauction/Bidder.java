@@ -10,13 +10,17 @@ import java.util.Random;
 
 public class Bidder implements Runnable {
     private final BackendSession SESSION;
-    private final String URL;
     private final BigInteger[] auctionId; // auctions in which bidder is participating
 
-    public Bidder(BackendSession SESSION, String URL) {
+    public Bidder(BackendSession SESSION, String username, String nodeId) {
         this.SESSION = SESSION;
-        this.URL = URL;
         this.auctionId = new BigInteger[]{};
+        try {
+            // login user
+            SESSION.loginUser(username, nodeId);
+        } catch (BackendException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -29,24 +33,37 @@ public class Bidder implements Runnable {
         // jesli tak to wygralismy
         // jesli nie to przegralismy
         //aukcja zakonczona koniec watku
-        Random rnd = new Random();
-        Row row;
+
+        Row row = null;
         ResultSet rs = null;
-        for (int i=0; i<40000; i++){
-            try {
-                SESSION.updatePageViewCounts(URL);
-            } catch (BackendException e) {
-                e.printStackTrace();
-            }
-            try {
-                rs = SESSION.getPageViewCounts(URL);
-            } catch (BackendException e) {
-                e.printStackTrace();
-            }
-            row = rs.one();
-            String url = row.getString("url"); //or rs.getString("column name");
-            long counter = row.getLong("views");
-            System.out.println("URL: " + url + " - COUNTER: " + counter);
+        try {
+            rs = SESSION.getAllAuctions();
+        } catch (BackendException e) {
+            e.printStackTrace();
         }
+
+        row = rs.one();
+        String productName = row.getString("product_name"); //or rs.getString("column name");
+        System.out.println("Product name: " + productName);
+
+//        Random rnd = new Random();
+//        Row row;
+//        ResultSet rs = null;
+//        for (int i=0; i<40000; i++){
+//            try {
+//                SESSION.updatePageViewCounts(URL);
+//            } catch (BackendException e) {
+//                e.printStackTrace();
+//            }
+//            try {
+//                rs = SESSION.getPageViewCounts(URL);
+//            } catch (BackendException e) {
+//                e.printStackTrace();
+//            }
+//            row = rs.one();
+//            String url = row.getString("url"); //or rs.getString("column name");
+//            long counter = row.getLong("views");
+//            System.out.println("URL: " + url + " - COUNTER: " + counter);
+//        }
     }
 }

@@ -1,2 +1,2 @@
-USE DutchAucton;
+USE DutchAuction;
 DROP KEYSPACE DutchAuction;
