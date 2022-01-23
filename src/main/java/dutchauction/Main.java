@@ -27,48 +27,30 @@ public class Main {
 		}
 		try {
 			BackendSession session = new BackendSession(contactPoint, keyspace);
-//			String[] availUsernames = {"Adam", "Ola", "Ewa", "Kasia"};
-//			for (String username: availUsernames) {
-//				session.logoutUser(username);
-//			}
-//			String[] nodeIds = {"node1", "node2", "node3"};
-//			Thread[] threads = new Thread[3];
-//
-//			for (Integer i=0; i<3; i++) {
-//				//threads[i] = new Thread(new WorkThread(session, nodeIds[i]));
-//				String finalUrl = i.toString();
-//				threads[i] = new Thread(new CounterThread(session, finalUrl));
-//				threads[i].start();
-//			}
 
-			Thread[] owners = new Thread[1];
+			Thread[] owners = new Thread[3];
 			Thread[] bidders = new Thread[1];
 
-			owners[0] = new Thread(new AuctionOwner(session, "1", "chleb", "pszenny", 1.0, 0, 60,3.0, "zdzichu", "node1"));
-			bidders[0] = new Thread(new Bidder(session, "krycha", "node2"));
+			owners[0] = new Thread(new AuctionOwner(session, "1", "chleb", "pszenny", 1.0, 0, 60,3.0, "Mirek", "node1"));
+			owners[1] = new Thread(new AuctionOwner(session, "2", "bułka", "kajzerka", 1.0, 0, 60,2.5, "Mariusz", "node2"));
+			owners[2] = new Thread(new AuctionOwner(session, "3", "pączek", "z lukrem", 1.0, 0, 60,4.0, "Jan", "node3"));
 
+			bidders[0] = new Thread(new Bidder(session, "Krycha", "node2"));
 
-
-
-			try {
-				owners[0].start();
-				owners[0].join();
-				bidders[0].start();
-				bidders[0].join();
-			} catch (Exception e) {
-				System.out.println(e.getMessage());
+			for (Integer i=0; i<3; i++) {
+				//threads[i] = new Thread(new WorkThread(session, nodeIds[i]));
+				String finalUrl = i.toString();
+				owners[i].start();
+				owners[i].join();
 			}
-//			try {
-//				for (int i = 0; i < 3; i++) {
-//					threads[i].join();
-//				}
-//			} catch (Exception e) {
-//				System.out.println(e.getMessage());
-//			}
+			bidders[0].start();
+			bidders[0].join();
+
 		} catch (BackendException b) {
 			System.out.println(b.getMessage());
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
-
 
 		System.exit(0);
 	}

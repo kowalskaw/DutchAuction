@@ -6,6 +6,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.ResultSet;
 
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Random;
 
 public class Bidder implements Runnable {
@@ -25,16 +26,15 @@ public class Bidder implements Runnable {
 
     @Override
     public void run() {
-        // pobrac akucje
-        // wylosowac w jakiej bierzemy udzial
-        // zapisac ich id do listy
-        // update zrobic na akucji, gdzie wstawiamy username, cene, timestamp
+        // pobrac wszystkie akucje
+        // wylosowac 2 w jakich bierze udzial
+        // zapisac id aukcji do listy
+        // wykonac update na akucji, gdzie wstawiamy username, cene, timestamp
         // cyklicznie sprawdzamy, czy w polu winner jest nasz username
         // jesli tak to wygralismy
         // jesli nie to przegralismy
-        //aukcja zakonczona koniec watku
+        // aukcja zakonczona koniec watku
 
-        Row row = null;
         ResultSet rs = null;
         try {
             rs = SESSION.getAllAuctions();
@@ -42,9 +42,14 @@ public class Bidder implements Runnable {
             e.printStackTrace();
         }
 
-        row = rs.one();
-        String productName = row.getString("product_name"); //or rs.getString("column name");
-        System.out.println("Product name: " + productName);
+        List<Row> rows = rs.all();
+
+        for (Row row : rows) {
+            System.out.println(row.getString("id"));
+            System.out.println(row.getString("product_name"));
+            System.out.println(row.getString("owner"));
+            System.out.println("-------------");
+        }
 
 //        Random rnd = new Random();
 //        Row row;

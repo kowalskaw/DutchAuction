@@ -24,7 +24,7 @@ CREATE TABLE Auction (
   epoch_period int, // time that epoch lasts
   current_price double, // at that price, user will automatically bid auction
   winner varchar,
-  bidders bidder,
+  bidders set<frozen<bidder>>, // set of bidders that currently participate in auction
   owner varchar, // creator of the auction
   PRIMARY KEY(id)
 );
