@@ -6,16 +6,18 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.ResultSet;
 
 import java.math.BigInteger;
-import java.util.List;
-import java.util.Random;
+import java.time.LocalDateTime;
+import java.util.*;
 
 public class Bidder implements Runnable {
     private final BackendSession SESSION;
-    private final BigInteger[] auctionId; // auctions in which bidder is participating
+    private final List<String> auctionId; // auctions in which bidder is participating
+    private final String username;
 
     public Bidder(BackendSession SESSION, String username, String nodeId) {
         this.SESSION = SESSION;
-        this.auctionId = new BigInteger[]{};
+        this.auctionId = new ArrayList<String>(2){};
+        this.username = username;
         try {
             // login user
             SESSION.loginUser(username, nodeId);
@@ -44,31 +46,45 @@ public class Bidder implements Runnable {
 
         List<Row> rows = rs.all();
 
+        Random rand = new Random();
+        Integer firstAuctionIndex = rand.nextInt(rows.size());
+
+        this.auctionId.add(rows.get(firstAuctionIndex).getString("id"));
+        rows.remove(firstAuctionIndex);
+
+        Integer secondAuctionIndex = rand.nextInt(rows.size());
+        this.auctionId.add(rows.get(secondAuctionIndex).getString("id"));
+
+        int boundary = 0;
         for (Row row : rows) {
+            if(Integer.parseInt(this.auctionId.get(0))==Integer.parseInt(row.getString("id"))) {
+                boundary = row.getInt("initial_price");
+            }
             System.out.println(row.getString("id"));
             System.out.println(row.getString("product_name"));
             System.out.println(row.getString("owner"));
             System.out.println("-------------");
         }
+        int price = rand.nextInt(boundary+1)+1;
+        LocalDateTime timestamp = LocalDateTime.now();
+        try {
+            SESSION.updateAuctionBidder(this.username, price, timestamp, this.auctionId.get(0));
+        } catch (BackendException e) {
+            e.printStackTrace();
+        }
+        try {
+            rs = SESSION.getAllAuctions();
+        } catch (BackendException e) {
+            e.printStackTrace();
+        }
+        List<Row> modified = rs.all();
+        for (Row row : modified) {
 
-//        Random rnd = new Random();
-//        Row row;
-//        ResultSet rs = null;
-//        for (int i=0; i<40000; i++){
-//            try {
-//                SESSION.updatePageViewCounts(URL);
-//            } catch (BackendException e) {
-//                e.printStackTrace();
-//            }
-//            try {
-//                rs = SESSION.getPageViewCounts(URL);
-//            } catch (BackendException e) {
-//                e.printStackTrace();
-//            }
-//            row = rs.one();
-//            String url = row.getString("url"); //or rs.getString("column name");
-//            long counter = row.getLong("views");
-//            System.out.println("URL: " + url + " - COUNTER: " + counter);
-//        }
+            System.out.println(row.getString("id"));
+            System.out.println(row.getString("product_name"));
+            System.out.println(row.getString("owner"));
+            System.out.println(row.getMap("bidders",String.class, String.class));
+            System.out.println("-------------");
+        }
     }
 }

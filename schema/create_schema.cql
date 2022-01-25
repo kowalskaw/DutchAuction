@@ -9,22 +9,22 @@ CREATE TABLE Users (
   PRIMARY KEY(username)
 );
 
-CREATE TYPE bidder (
-username varchar,
-price double,
-timestamp timestamp
-);
+//CREATE TYPE bidder (
+//username varchar,
+//price double,
+//timestamp timestamp
+//);
 
 CREATE TABLE Auction (
   id varchar,
   product_name varchar,
   product_description varchar,
-  price_drop_factor double,  // constant, determines price drop
+  price_drop_factor int,  // constant, determines price drop
   epoch int,     // number of epochs
   epoch_period int, // time that epoch lasts
-  current_price double, // at that price, user will automatically bid auction
+  initial_price int, // at that price
   winner varchar,
-  bidders set<frozen<bidder>>, // set of bidders that currently participate in auction
+  bidders map<varchar, varchar>, // map of bidders -> {"username" : "proposed_price;timestamp"}
   owner varchar, // creator of the auction
   PRIMARY KEY(id)
 );

@@ -12,7 +12,8 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
 import java.math.BigInteger;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /*
  * For error handling done right see: 
@@ -48,11 +49,9 @@ public class BackendSession {
 	private static PreparedStatement SELECT_AUCTION;
 	private static PreparedStatement SELECT_ALL_AUCTION;
 	private static PreparedStatement INSERT_AUCTION; //init Auction
-	private static PreparedStatement UPDATE_AUCTION; //update only soe columns
-
-	private static PreparedStatement INC_COUNTER;
-	private static PreparedStatement SELECT_COUNTER;
-	private static PreparedStatement DELETE_ALL_COUNTER;
+	private static PreparedStatement BIDDER_UPDATE_AUCTION;
+	private static PreparedStatement OWNER_UPDATE_AUCTION;
+	private static PreparedStatement SELECT_AUCTION_BIDDERS;
 
 
 	private static final String USER_FORMAT = "- %-10s  %-16s %-10s %-10s\n";
@@ -65,15 +64,13 @@ public class BackendSession {
 			INSERT_USER = session
 					.prepare("INSERT INTO Users (username, nodeId) VALUES (?, ?);");
 			DELETE_USER = session.prepare("DELETE FROM Users WHERE username = ?;");
-//			INC_COUNTER = session.prepare("UPDATE PageViewCounts SET views = views + 1 WHERE url=?");
-//			SELECT_COUNTER = session.prepare("SELECT * FROM PageViewCounts WHERE url = ?;");
-//			DELETE_ALL_COUNTER = session.prepare("TRUNCATE PageViewCounts;");
-
 			SELECT_AUCTION = session.prepare("SELECT * FROM Auction WHERE id = ?;");
 			SELECT_ALL_AUCTION = session.prepare("SELECT * FROM Auction;");
 			INSERT_AUCTION = session
-					.prepare("INSERT INTO Auction (id, product_name, product_description, price_drop_factor, epoch, epoch_period, current_price, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?);");
-
+					.prepare("INSERT INTO Auction (id, product_name, product_description, price_drop_factor, epoch, epoch_period, initial_price, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?);");
+			SELECT_AUCTION_BIDDERS = session.prepare("SELECT bidders FROM Auction WHERE id = ? ");
+			BIDDER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET bidders = bidders + ? WHERE id = ?;");
+			OWNER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET winner = ? WHERE id = ?;");
 
 		} catch (Exception e) {
 			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
@@ -99,42 +96,6 @@ public class BackendSession {
 			return null;
 		}
 	}
-
-//	public ResultSet getPageViewCounts(String url) throws BackendException {
-//		BoundStatement bs = new BoundStatement(SELECT_COUNTER);
-//		bs.bind(url);
-//		ResultSet rs = null;
-//		try {
-//			rs = session.execute(bs);
-//		} catch (Exception e) {
-//			throw new BackendException("Could not perform a query. " + e.getMessage() + ".", e);
-//		}
-//
-//		if (rs != null) {
-//			return rs;
-//		} else {
-//			return null;
-//		}
-//	}
-
-//	public void updatePageViewCounts(String url) throws BackendException {
-//		BoundStatement bs = new BoundStatement(INC_COUNTER);
-//		bs.bind(url);
-//		try {
-//			session.execute(bs);
-//		} catch (Exception e) {
-//			throw new BackendException("Could not perform an upsert. " + e.getMessage() + ".", e);
-//		}
-//	}
-//
-//	public void truncatePageViewCounts() throws BackendException {
-//		BoundStatement bs = new BoundStatement(DELETE_ALL_COUNTER);
-//		try {
-//			session.execute(bs);
-//		} catch (Exception e) {
-//			throw new BackendException("Could not perform an upsert. " + e.getMessage() + ".", e);
-//		}
-//	}
 
 	public void loginUser(String username, String nodeId) throws BackendException {
 		BoundStatement bs = new BoundStatement(INSERT_USER);
@@ -162,14 +123,26 @@ public class BackendSession {
 //		logger.info("User " + username + " released node");
 	}
 
-	public void initializeAuction(String id, String productName, String productDescription, double priceDropFactor, int epoch, int epochPeriod, double currentPrice, String owner) throws BackendException{
+	public void initializeAuction(String id, String productName, String productDescription, int priceDropFactor, int epoch, int epochPeriod, int initialPrice, String owner) throws BackendException{
 		BoundStatement bs = new BoundStatement(INSERT_AUCTION);
-		bs.bind(id, productName, productDescription, priceDropFactor, epoch, epochPeriod, currentPrice, owner);
+		bs.bind(id, productName, productDescription, priceDropFactor, epoch, epochPeriod, initialPrice, owner);
 		try {
 			session.execute(bs);
 		} catch (Exception e) {
 			throw new BackendException("Could not perform an insert auction operation. " + e.getMessage() + ".", e);
 		}
+	}
+
+	public Row getOneAuction(String id) throws BackendException {
+		BoundStatement bs = new BoundStatement(SELECT_AUCTION);
+		bs.bind(id);
+		ResultSet rs = null;
+		try {
+			rs = session.execute(bs);
+		} catch (Exception e) {
+			throw new BackendException("Could not perform a query. " + e.getMessage() + ".", e);
+		}
+		return rs.one();
 	}
 
 	public ResultSet getAllAuctions() throws BackendException {
@@ -180,11 +153,29 @@ public class BackendSession {
 		} catch (Exception e) {
 			throw new BackendException("Could not perform a select all auctions operation. " + e.getMessage() + ".", e);
 		}
+		return rs;
+	}
 
-		if (rs != null) {
-			return rs;
-		} else {
-			return null;
+	public void updateAuctionBidder(String username, int price, LocalDateTime timestamp, String auctionId) throws BackendException {
+		BoundStatement bsUpdate = new BoundStatement(BIDDER_UPDATE_AUCTION);
+		String value = price+";"+timestamp;
+		Map<String, String> bidders = new HashMap<>();
+		bidders.put(username,value);
+		bsUpdate.bind(bidders, auctionId);
+		try {
+			session.execute(bsUpdate);
+		} catch (Exception e) {
+			throw new BackendException("Could not perform an update. " + e.getMessage() + ".", e);
+		}
+	}
+
+	public void updateAuctionWinner(String username, String auctionId) throws BackendException {
+		BoundStatement bs = new BoundStatement(OWNER_UPDATE_AUCTION);
+		bs.bind(username, auctionId);
+		try {
+			session.execute(bs);
+		} catch (Exception e) {
+			throw new BackendException("Could not perform an update. " + e.getMessage() + ".", e);
 		}
 	}
 

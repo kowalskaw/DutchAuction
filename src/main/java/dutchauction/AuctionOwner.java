@@ -18,7 +18,7 @@ public class AuctionOwner implements Runnable {
     private double currentPrice;
     private String username;
 
-    public AuctionOwner(BackendSession SESSION, String id, String productName, String productDescription, double priceDropFactor, int epoch, int epochPeriod, double currentPrice, String username, String nodeId) {
+    public AuctionOwner(BackendSession SESSION, String id, String productName, String productDescription, int priceDropFactor, int epoch, int epochPeriod, int initialPrice, String username, String nodeId) {
         this.SESSION = SESSION;
         try {
             // login user
@@ -28,7 +28,7 @@ public class AuctionOwner implements Runnable {
         }
         try {
             // initialize auction
-            SESSION.initializeAuction(id, productName, productDescription, priceDropFactor, epoch, epochPeriod, currentPrice, username);
+            SESSION.initializeAuction(id, productName, productDescription, priceDropFactor, epoch, epochPeriod, initialPrice, username);
         } catch (BackendException e) {
             e.printStackTrace();
         }

@@ -31,9 +31,9 @@ public class Main {
 			Thread[] owners = new Thread[3];
 			Thread[] bidders = new Thread[1];
 
-			owners[0] = new Thread(new AuctionOwner(session, "1", "chleb", "pszenny", 1.0, 0, 60,3.0, "Mirek", "node1"));
-			owners[1] = new Thread(new AuctionOwner(session, "2", "bułka", "kajzerka", 1.0, 0, 60,2.5, "Mariusz", "node2"));
-			owners[2] = new Thread(new AuctionOwner(session, "3", "pączek", "z lukrem", 1.0, 0, 60,4.0, "Jan", "node3"));
+			owners[0] = new Thread(new AuctionOwner(session, "1", "chleb", "pszenny", 1, 0, 60,3, "Mirek", "node1"));
+			owners[1] = new Thread(new AuctionOwner(session, "2", "bułka", "kajzerka", 1, 0, 60,2, "Mariusz", "node2"));
+			owners[2] = new Thread(new AuctionOwner(session, "3", "pączek", "z lukrem", 1, 0, 60,4, "Jan", "node3"));
 
 			bidders[0] = new Thread(new Bidder(session, "Krycha", "node2"));
 
