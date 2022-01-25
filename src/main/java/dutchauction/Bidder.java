@@ -65,7 +65,7 @@ public class Bidder implements Runnable {
             System.out.println(row.getString("owner"));
             System.out.println("-------------");
         }
-        int price = rand.nextInt(boundary+1)+1;
+        int price = rand.nextInt(boundary-1)+1;
         LocalDateTime timestamp = LocalDateTime.now();
         try {
             SESSION.updateAuctionBidder(this.username, price, timestamp, this.auctionId.get(0));
