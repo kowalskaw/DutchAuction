@@ -10,7 +10,7 @@ import java.util.*;
 
 public class Bidder implements Runnable {
     private final BackendSession SESSION;
-    private final List<String> auctionIds; // auctions in which bidder is participating
+    private List<String> auctionIds; // auctions in which bidder is participating
     private final String username;
     private final Random rand;
     private ResultSet rs;
@@ -37,10 +37,11 @@ public class Bidder implements Runnable {
 
     private void randomizeAuctions(){
         try {
-            rs = SESSION.getAllAuctions();
+            rs = SESSION.getAllRunningAuctions();
         } catch (BackendException e) {
             e.printStackTrace();
         }
+
         List<Row> rows = rs.all();
         //2 auction id's
         getRandomIndexFromList(rows);
@@ -112,22 +113,26 @@ public class Bidder implements Runnable {
             Thread.sleep(epoch * 1000L);
             finished = checkResult(id);
         }
+        this.auctionIds = new ArrayList<String>(2){};
     }
 
     @Override
     public void run() {
 
-        randomizeAuctions();
-        // participate in 2 auctions
-        for(int i=0; i<2; i++){
-            String id = auctionIds.get(i);
-            participateInAuction(id);
-            try {
-                // check on results every 1 minute
-                checkResultsPeriodically(id);
-            } catch (BackendException | InterruptedException e) {
-                e.printStackTrace();
+        while(true) {
+            randomizeAuctions();
+            // participate in 2 auctions
+            for (int i = 0; i < 2; i++) {
+                String id = auctionIds.get(i);
+                participateInAuction(id);
+                try {
+                    // check on results every 1 minute
+                    checkResultsPeriodically(id);
+                } catch (BackendException | InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
+
         }
     }
 }

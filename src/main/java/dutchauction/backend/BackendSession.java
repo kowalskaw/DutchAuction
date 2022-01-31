@@ -48,10 +48,10 @@ public class BackendSession {
 	private static PreparedStatement DELETE_USER;
 	private static PreparedStatement SELECT_AUCTION;
 	private static PreparedStatement SELECT_ALL_AUCTION;
+	private static PreparedStatement SELECT_ALL_RUNNING_AUCTION;
 	private static PreparedStatement INSERT_AUCTION; //init Auction
 	private static PreparedStatement BIDDER_UPDATE_AUCTION;
 	private static PreparedStatement OWNER_UPDATE_AUCTION;
-	private static PreparedStatement SELECT_AUCTION_BIDDERS;
 
 
 	private static final String USER_FORMAT = "- %-10s  %-16s %-10s %-10s\n";
@@ -64,13 +64,15 @@ public class BackendSession {
 			INSERT_USER = session
 					.prepare("INSERT INTO Users (username, nodeId) VALUES (?, ?);");
 			DELETE_USER = session.prepare("DELETE FROM Users WHERE username = ?;");
-			SELECT_AUCTION = session.prepare("SELECT * FROM Auction WHERE id = ?;");
+			SELECT_AUCTION = session.prepare("SELECT * FROM Auction WHERE finished = ? AND id = ?;");
 			SELECT_ALL_AUCTION = session.prepare("SELECT * FROM Auction;");
+
+			SELECT_ALL_RUNNING_AUCTION = session.prepare("SELECT * FROM Auction WHERE finished=false;");
+
 			INSERT_AUCTION = session
-					.prepare("INSERT INTO Auction (id, product_name, product_description, price_drop_factor, epoch, epoch_period, initial_price, current_price, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);");
-			SELECT_AUCTION_BIDDERS = session.prepare("SELECT bidders FROM Auction WHERE id = ? ");
-			BIDDER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET bidders = bidders + ? WHERE id = ?;");
-			OWNER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET winner = ? WHERE id = ?;");
+					.prepare("INSERT INTO Auction (finished, id, product_name, product_description, price_drop_factor, epoch, epoch_period, initial_price, current_price, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+			BIDDER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET bidders = bidders + ? WHERE finished=false AND id = ?;");
+			OWNER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET winner = ?, finished=true WHERE finished=false AND id = ?;");
 		} catch (Exception e) {
 			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
 		}
@@ -124,7 +126,7 @@ public class BackendSession {
 
 	public void initializeAuction(String id, String productName, String productDescription, int priceDropFactor, int epoch, int epochPeriod, int initialPrice, int currentPrice, String owner) throws BackendException{
 		BoundStatement bs = new BoundStatement(INSERT_AUCTION);
-		bs.bind(id, productName, productDescription, priceDropFactor, epoch, epochPeriod, initialPrice, currentPrice, owner);
+		bs.bind(false, id, productName, productDescription, priceDropFactor, epoch, epochPeriod, initialPrice, currentPrice, owner);
 		try {
 			session.execute(bs);
 		} catch (Exception e) {
@@ -132,7 +134,7 @@ public class BackendSession {
 		}
 	}
 
-	public Row getOneAuction(String id) throws BackendException {
+	public Row getOneAuction(String id, boolean finished) throws BackendException {
 		BoundStatement bs = new BoundStatement(SELECT_AUCTION);
 		bs.bind(id);
 		ResultSet rs;
@@ -144,6 +146,9 @@ public class BackendSession {
 		return rs.one();
 	}
 
+	public Row getOneAuction(String id) throws BackendException {
+		return getOneAuction(id, true);
+	}
 	public ResultSet getAllAuctions() throws BackendException {
 		BoundStatement bs = new BoundStatement(SELECT_ALL_AUCTION);
 		ResultSet rs;
@@ -151,6 +156,17 @@ public class BackendSession {
 			rs = session.execute(bs);
 		} catch (Exception e) {
 			throw new BackendException("Could not perform a select all auctions operation. " + e.getMessage() + ".", e);
+		}
+		return rs;
+	}
+
+	public ResultSet getAllRunningAuctions() throws BackendException {
+		BoundStatement bs = new BoundStatement(SELECT_ALL_RUNNING_AUCTION);
+		ResultSet rs;
+		try {
+			rs = session.execute(bs);
+		} catch (Exception e) {
+			throw new BackendException("Could not perform a select all running auctions operation. " + e.getMessage() + ".", e);
 		}
 		return rs;
 	}

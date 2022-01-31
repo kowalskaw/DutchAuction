@@ -68,12 +68,12 @@ public class AuctionOwner implements Runnable {
 
     private void dropPrice(Row auction) throws BackendException {
         epoch++;
-        int newPrice = auction.getInt("current_price") - auction.getInt("price_drop_factor");
+        this.currentPrice = auction.getInt("current_price");
+        this.priceDropFactor = auction.getInt("price_drop_factor");
+        int newPrice = this.currentPrice - this.priceDropFactor;
         if( newPrice > 0) {
             SESSION.initializeAuction(auctionId, productName, productDescription, priceDropFactor, epoch, epochPeriod, initialPrice, newPrice, username);
             this.currentPrice = newPrice;
-        } else {
-            this.winner = "none";
         }
     }
 
@@ -123,7 +123,7 @@ public class AuctionOwner implements Runnable {
             try {
                 waitEpoch();
                 Row auction = SESSION.getOneAuction(this.auctionId);
-                if(checkWinner(auction)){
+                if(checkWinner(auction) || (this.currentPrice - this.priceDropFactor < 0)){
                     System.out.printf("%s: auction at %d won by %s\n", this.username, this.currentPrice, this.winner);
                     initNewAuction(UUID.randomUUID().toString(),this.productName,productDescription,this.priceDropFactor, 0,this.epochPeriod, random.nextInt(20)+2);
                 } else {

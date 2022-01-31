@@ -16,6 +16,7 @@ CREATE TABLE Users (
 //);
 
 CREATE TABLE Auction (
+  finished boolean,
   id varchar,
   product_name varchar,
   product_description varchar,
@@ -27,5 +28,5 @@ CREATE TABLE Auction (
   winner varchar,
   bidders map<varchar, varchar>, // map of bidders -> {"username" : "proposed_price;timestamp"}
   owner varchar, // creator of the auction
-  PRIMARY KEY(id)
+  PRIMARY KEY(finished, id)
 );
