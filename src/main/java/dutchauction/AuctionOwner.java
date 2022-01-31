@@ -1,6 +1,7 @@
 package dutchauction;
 
 import com.datastax.driver.core.Row;
+import com.datastax.driver.core.TypeCodec;
 import dutchauction.backend.BackendException;
 import dutchauction.backend.BackendSession;
 
@@ -13,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 public class AuctionOwner implements Runnable {
     private final BackendSession SESSION;
@@ -21,6 +23,7 @@ public class AuctionOwner implements Runnable {
     private int priceDropFactor;
     private int epoch;
     private int epochPeriod;
+    private int initialPrice;
     private int currentPrice;
     private String username;
     private String auctionId;
@@ -29,25 +32,35 @@ public class AuctionOwner implements Runnable {
 
     public AuctionOwner(BackendSession SESSION, String id, String productName, String productDescription, int priceDropFactor, int epoch, int epochPeriod, int initialPrice, String username, String nodeId) {
         this.SESSION = SESSION;
+        this.username = username;
         try {
             // login user
-            SESSION.loginUser(username, nodeId);
-            this.username = username;
-            this.auctionId = id;
-            this.productName = productName;
-            this.productDescription = productDescription;
-            this.priceDropFactor = priceDropFactor;
-            this.epoch = epoch;
-            this.epochPeriod = epochPeriod;
-            this.currentPrice = initialPrice;
-            this.winner = null;
             this.random = new Random();
+            this.SESSION.loginUser(username, nodeId);
+            initNewAuction(id, productName,productDescription,priceDropFactor,epoch,epochPeriod,initialPrice);
+
         } catch (BackendException e) {
             e.printStackTrace();
         }
+    }
+
+    public void initNewAuction(String id, String productName, String productDescription, int priceDropFactor, int epoch, int epochPeriod, int initialPrice) {
+        this.auctionId = id;
+        this.productName = productName;
+        this.productDescription = productDescription;
+        this.priceDropFactor = priceDropFactor;
+        this.epoch = epoch;
+        this.epochPeriod = epochPeriod;
+        this.currentPrice = initialPrice;
+        this.initialPrice = initialPrice;
+        initNewAuction();
+    }
+
+    public void initNewAuction(){
+        this.winner = null;
         try {
             // initialize auction
-            SESSION.initializeAuction(id, productName, productDescription, priceDropFactor, epoch, epochPeriod, initialPrice, username);
+            SESSION.initializeAuction(auctionId, productName, productDescription, priceDropFactor, epoch, epochPeriod, initialPrice, initialPrice, username);
         } catch (BackendException e) {
             e.printStackTrace();
         }
@@ -55,16 +68,18 @@ public class AuctionOwner implements Runnable {
 
     private void dropPrice(Row auction) throws BackendException {
         epoch++;
-        int newPrice = auction.getInt("initial_price") - auction.getInt("price_drop_factor");
+        int newPrice = auction.getInt("current_price") - auction.getInt("price_drop_factor");
         if( newPrice > 0) {
-            SESSION.initializeAuction(auctionId, productName, productDescription, priceDropFactor, epoch, epochPeriod, newPrice, username);
+            SESSION.initializeAuction(auctionId, productName, productDescription, priceDropFactor, epoch, epochPeriod, initialPrice, newPrice, username);
             this.currentPrice = newPrice;
+        } else {
+            this.winner = "none";
         }
     }
 
     private void waitEpoch(){
         try {
-            Thread.sleep(epoch * 1000L);
+            Thread.sleep(epochPeriod * 50L);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -103,19 +118,21 @@ public class AuctionOwner implements Runnable {
 
     @Override
     public void run() {
-        while(this.winner == null) {
+        while(true) {
             auctionInfo();
             try {
                 waitEpoch();
                 Row auction = SESSION.getOneAuction(this.auctionId);
-                if(!checkWinner(auction))
+                if(checkWinner(auction)){
+                    System.out.printf("%s: auction at %d won by %s\n", this.username, this.currentPrice, this.winner);
+                    initNewAuction(UUID.randomUUID().toString(),this.productName,productDescription,this.priceDropFactor, 0,this.epochPeriod, random.nextInt(20)+2);
+                } else {
                     dropPrice(auction);
+                }
             } catch (BackendException | ParseException e) {
                 e.printStackTrace();
             }
         }
-        System.out.printf("%s: auction at %d won by %s\n", this.username, this.currentPrice, this.winner);
-
     }
 
 }

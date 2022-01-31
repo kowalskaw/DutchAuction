@@ -23,6 +23,7 @@ CREATE TABLE Auction (
   epoch int,     // number of epochs
   epoch_period int, // time that epoch lasts
   initial_price int, // at that price
+  current_price int,
   winner varchar,
   bidders map<varchar, varchar>, // map of bidders -> {"username" : "proposed_price;timestamp"}
   owner varchar, // creator of the auction

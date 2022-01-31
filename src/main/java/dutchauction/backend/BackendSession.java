@@ -67,7 +67,7 @@ public class BackendSession {
 			SELECT_AUCTION = session.prepare("SELECT * FROM Auction WHERE id = ?;");
 			SELECT_ALL_AUCTION = session.prepare("SELECT * FROM Auction;");
 			INSERT_AUCTION = session
-					.prepare("INSERT INTO Auction (id, product_name, product_description, price_drop_factor, epoch, epoch_period, initial_price, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?);");
+					.prepare("INSERT INTO Auction (id, product_name, product_description, price_drop_factor, epoch, epoch_period, initial_price, current_price, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);");
 			SELECT_AUCTION_BIDDERS = session.prepare("SELECT bidders FROM Auction WHERE id = ? ");
 			BIDDER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET bidders = bidders + ? WHERE id = ?;");
 			OWNER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET winner = ? WHERE id = ?;");
@@ -82,7 +82,7 @@ public class BackendSession {
 	public String getUserNode(String username) throws BackendException {
 		BoundStatement bs = new BoundStatement(SELECT_USER);
 		bs.bind(username);
-		ResultSet rs = null;
+		ResultSet rs;
 		try {
 			rs = session.execute(bs);
 		} catch (Exception e) {
@@ -123,9 +123,9 @@ public class BackendSession {
 //		logger.info("User " + username + " released node");
 	}
 
-	public void initializeAuction(String id, String productName, String productDescription, int priceDropFactor, int epoch, int epochPeriod, int initialPrice, String owner) throws BackendException{
+	public void initializeAuction(String id, String productName, String productDescription, int priceDropFactor, int epoch, int epochPeriod, int initialPrice, int currentPrice, String owner) throws BackendException{
 		BoundStatement bs = new BoundStatement(INSERT_AUCTION);
-		bs.bind(id, productName, productDescription, priceDropFactor, epoch, epochPeriod, initialPrice, owner);
+		bs.bind(id, productName, productDescription, priceDropFactor, epoch, epochPeriod, initialPrice, currentPrice, owner);
 		try {
 			session.execute(bs);
 		} catch (Exception e) {
@@ -136,7 +136,7 @@ public class BackendSession {
 	public Row getOneAuction(String id) throws BackendException {
 		BoundStatement bs = new BoundStatement(SELECT_AUCTION);
 		bs.bind(id);
-		ResultSet rs = null;
+		ResultSet rs;
 		try {
 			rs = session.execute(bs);
 		} catch (Exception e) {
@@ -147,7 +147,7 @@ public class BackendSession {
 
 	public ResultSet getAllAuctions() throws BackendException {
 		BoundStatement bs = new BoundStatement(SELECT_ALL_AUCTION);
-		ResultSet rs = null;
+		ResultSet rs;
 		try {
 			rs = session.execute(bs);
 		} catch (Exception e) {
