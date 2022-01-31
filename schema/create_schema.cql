@@ -22,7 +22,7 @@ CREATE TABLE Auction (
   price_drop_factor int,  // constant, determines price drop
   epoch int,     // number of epochs
   epoch_period int, // time that epoch lasts
-  initial_price int, // at that price
+  initial_price int,
   current_price int,
   winner varchar,
   bidders map<varchar, varchar>, // map of bidders -> {"username" : "proposed_price;timestamp"}

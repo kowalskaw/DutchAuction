@@ -71,7 +71,6 @@ public class BackendSession {
 			SELECT_AUCTION_BIDDERS = session.prepare("SELECT bidders FROM Auction WHERE id = ? ");
 			BIDDER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET bidders = bidders + ? WHERE id = ?;");
 			OWNER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET winner = ? WHERE id = ?;");
-
 		} catch (Exception e) {
 			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
 		}

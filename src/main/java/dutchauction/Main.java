@@ -29,22 +29,29 @@ public class Main {
 			BackendSession session = new BackendSession(contactPoint, keyspace);
 
 			Thread[] owners = new Thread[3];
-			Thread[] bidders = new Thread[1];
+			Thread[] bidders = new Thread[3];
 
 			owners[0] = new Thread(new AuctionOwner(session, "1", "chleb", "pszenny", 1, 0, 60,3, "Mirek", "node1"));
 			owners[1] = new Thread(new AuctionOwner(session, "2", "bułka", "kajzerka", 1, 0, 60,2, "Mariusz", "node2"));
 			owners[2] = new Thread(new AuctionOwner(session, "3", "pączek", "z lukrem", 1, 0, 60,4, "Jan", "node3"));
 
-			bidders[0] = new Thread(new Bidder(session, "Krycha", "node2"));
+			bidders[0] = new Thread(new Bidder(session, "Krycha", "node1"));
+			bidders[1] = new Thread(new Bidder(session, "Janusz", "node2"));
+			bidders[2] = new Thread(new Bidder(session, "Zdzisław", "node3"));
 
-			for (Integer i=0; i<3; i++) {
-				//threads[i] = new Thread(new WorkThread(session, nodeIds[i]));
-				String finalUrl = i.toString();
-				owners[i].start();
-				owners[i].join();
+			for (Thread owner : owners) {
+				owner.start();
 			}
-			bidders[0].start();
-			bidders[0].join();
+			for (Thread bidder : bidders) {
+				bidder.start();
+			}
+			for (Thread owner : owners) {
+				owner.join();
+			}
+			for (Thread bidder : bidders) {
+				bidder.join();
+			}
+
 
 		} catch (BackendException b) {
 			System.out.println(b.getMessage());
