@@ -46,10 +46,12 @@ public class BackendSession {
 	private static PreparedStatement SELECT_USER;
 	private static PreparedStatement INSERT_USER;
 	private static PreparedStatement DELETE_USER;
+	private static PreparedStatement DELETE_AUCTION;
 	private static PreparedStatement SELECT_AUCTION;
 	private static PreparedStatement SELECT_ALL_AUCTION;
 	private static PreparedStatement SELECT_ALL_RUNNING_AUCTION;
 	private static PreparedStatement INSERT_AUCTION; //init Auction
+	private static PreparedStatement INSERT_WON_AUCTION;
 	private static PreparedStatement BIDDER_UPDATE_AUCTION;
 	private static PreparedStatement OWNER_UPDATE_AUCTION;
 
@@ -68,11 +70,15 @@ public class BackendSession {
 			SELECT_ALL_AUCTION = session.prepare("SELECT * FROM Auction;");
 
 			SELECT_ALL_RUNNING_AUCTION = session.prepare("SELECT * FROM Auction WHERE finished=false;");
-
+			DELETE_AUCTION =
+					session.prepare("DELETE FROM Auction WHERE finished = ? AND id = ?;");
 			INSERT_AUCTION = session
 					.prepare("INSERT INTO Auction (finished, id, product_name, product_description, price_drop_factor, epoch, epoch_period, initial_price, current_price, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+			INSERT_WON_AUCTION = session
+					.prepare("INSERT INTO Auction (finished, id, product_name, product_description, price_drop_factor, epoch, epoch_period, initial_price, current_price, owner, winner)" +
+							" VALUES (true, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
 			BIDDER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET bidders = bidders + ? WHERE finished=false AND id = ?;");
-			OWNER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET winner = ?, finished=true WHERE finished=false AND id = ?;");
+			OWNER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET winner = ? WHERE finished=false AND id = ?;");
 		} catch (Exception e) {
 			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
 		}
@@ -147,7 +153,7 @@ public class BackendSession {
 	}
 
 	public Row getOneAuction(String id) throws BackendException {
-		return getOneAuction(id, true);
+		return getOneAuction(id, false);
 	}
 	public ResultSet getAllAuctions() throws BackendException {
 		BoundStatement bs = new BoundStatement(SELECT_ALL_AUCTION);
@@ -185,10 +191,19 @@ public class BackendSession {
 	}
 
 	public void updateAuctionWinner(String username, String auctionId) throws BackendException {
-		BoundStatement bs = new BoundStatement(OWNER_UPDATE_AUCTION);
-		bs.bind(username, auctionId);
+		Row auction = this.getOneAuction(auctionId, false);
+
+		BoundStatement bs = new BoundStatement(INSERT_WON_AUCTION);
+		bs.bind(auctionId, auction.getString("product_name"), auction.getString("product_description"),
+				auction.getString("price_drop_factor"), auction.getString("epoch"), auction.getString("epoch_period"),
+				auction.getString("initial_price"), auction.getString("current_price"),
+				auction.getString("owner"), username);
+
+		BoundStatement deleteBS = new BoundStatement(DELETE_AUCTION);
+		deleteBS.bind(false, auctionId);
 		try {
 			session.execute(bs);
+			session.execute(deleteBS);
 		} catch (Exception e) {
 			throw new BackendException("Could not perform an update. " + e.getMessage() + ".", e);
 		}
