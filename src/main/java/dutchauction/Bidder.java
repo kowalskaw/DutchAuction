@@ -4,6 +4,8 @@ import dutchauction.backend.BackendException;
 import dutchauction.backend.BackendSession;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.ResultSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -14,16 +16,18 @@ public class Bidder implements Runnable {
     private final String username;
     private final Random rand;
     private ResultSet rs;
+    private static final Logger logger = LoggerFactory.getLogger(Bidder.class);
 
-    public Bidder(BackendSession SESSION, String username, String nodeId) {
+    public Bidder(BackendSession SESSION, String username) {
         this.SESSION = SESSION;
-        this.auctionIds = new ArrayList<String>(2){};
+        this.auctionIds = new ArrayList<>(2) {
+        };
         this.username = username;
         this.rand = new Random();
         this.rs = null;
         try {
             // login user
-            SESSION.loginUser(username, nodeId);
+            SESSION.loginUser(username);
         } catch (BackendException e) {
             e.printStackTrace();
         }
@@ -50,21 +54,22 @@ public class Bidder implements Runnable {
     }
 
     private void participateInAuction(String id){
-        int boundary = 1;
+        int boundary;
         try {
             Row auction = SESSION.getOneAuction(id);
             boundary = auction.getInt("initial_price");
-
-            System.out.printf("<%s> Participating in auction:\n", username);
-            System.out.printf("<%s> Id %s:\n",username, auction.getString("id"));
-            System.out.printf("<%s> Product name %s:\n",username, auction.getString("product_name"));
-            System.out.printf("<%s> Product initial price %d:\n",username, auction.getInt("initial_price"));
-            System.out.printf("<%s> Product owner %s:\n",username, auction.getString("owner"));
-            System.out.println("-------------");
+            logger.info("<{}> Participating in auction: { id={}, owner={}, name={}, description={}," +
+                            " initial_price={}, current_price={} }", username, auction.getString("id"),
+                    auction.getString("owner"), auction.getString("product_name"),
+                    auction.getString("product_description"), auction.getInt("initial_price"),
+                    auction.getInt("current_price"));
             int price = 1;
             if(boundary>1){
                 price = rand.nextInt(boundary-1)+1;
             }
+            logger.info("<{}> Proposing price {} for product {} in auction {} whose owner is {}", username, price,
+                    auction.getString("product_name"), auction.getString("id"),
+                    auction.getString("owner"));
             LocalDateTime timestamp = LocalDateTime.now();
             SESSION.updateAuctionBidder(username, price, timestamp, id);
         } catch (BackendException e) {
@@ -83,28 +88,26 @@ public class Bidder implements Runnable {
             return true;
         }
         if (row.getString("owner")==null) {
+            logger.debug("Tombstone detected in auction with id={}. Now removing it", row.getString("id"));
             SESSION.deleteOneAuction(id,false);
             return true;
         }
         if (row.getString("winner")==null){
-            System.out.printf("<%s> Waiting... Current price %d and bidders:\n",username, row.getInt("current_price"));
-            System.out.println(row.getMap("bidders",String.class, String.class));
-            System.out.println("-------------");
+            Map<String, String> bidders = row.getMap("bidders",String.class, String.class);
+            logger.info("<{}> Waiting... Current info on auction: { id={}, current_price={}, bidders={} }",
+                    username, row.getString("id"), row.getInt("current_price"), bidders.toString());
             return false;
         }
         else if(row.getString("winner").equals(username)){
-            System.out.printf("<%s> You won the product!\n",username);
-            System.out.printf("<%s> Id %s:\n",username, row.getString("id"));
-            System.out.printf("<%s> Product name %s:\n",username, row.getString("product_name"));
-            System.out.printf("<%s> Product description %s:\n",username, row.getString("product_description"));
-            System.out.printf("<%s> Product initial price %d:\n",username, row.getInt("initial_price"));
-            System.out.printf("<%s> Product owner %s:\n",username, row.getString("owner"));
-            System.out.println("-------------");
+            logger.info("<{}> I won an auction {} with product {} {} from {}", username, row.getString("id"),
+                    row.getString("product_name"), row.getString("product_description"),
+                    row.getString("owner"));
             return true;
         }
         else {
-            System.out.printf("<%s> You lose. The winner is %s and he bought %s\n",username, row.getString("winner"), row.getString("product_name"));
-            System.out.println("-------------");
+            logger.info("<{}> I lost. The winner is {} and he won the auction for {} with id {}",
+                    username, row.getString("winner"), row.getString("product_name"),
+                    row.getString("id"));
             return true;
         }
     }
@@ -123,7 +126,8 @@ public class Bidder implements Runnable {
             if (finished)
                 finished = checkResult(id, finished);
         }
-        this.auctionIds = new ArrayList<String>(2){};
+        this.auctionIds = new ArrayList<>(2) {
+        };
     }
 
     @Override

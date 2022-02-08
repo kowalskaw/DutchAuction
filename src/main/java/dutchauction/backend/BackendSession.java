@@ -1,6 +1,5 @@
 package dutchauction.backend;
 
-import org.apache.cassandra.cql3.CQL3Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +10,6 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 
-import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -64,7 +62,7 @@ public class BackendSession {
 		try {
 			SELECT_USER = session.prepare("SELECT * FROM Users WHERE username = ?;");
 			INSERT_USER = session
-					.prepare("INSERT INTO Users (username, nodeId) VALUES (?, ?);");
+					.prepare("INSERT INTO Users (username) VALUES (?);");
 			DELETE_USER = session.prepare("DELETE FROM Users WHERE username = ?;");
 			SELECT_AUCTION = session.prepare("SELECT * FROM Auction WHERE finished = ? AND id = ?;");
 			SELECT_ALL_AUCTION = session.prepare("SELECT * FROM Auction;");
@@ -85,27 +83,9 @@ public class BackendSession {
 		logger.info("Statements prepared");
 	}
 
-	public String getUserNode(String username) throws BackendException {
-		BoundStatement bs = new BoundStatement(SELECT_USER);
-		bs.bind(username);
-		ResultSet rs;
-		try {
-			rs = session.execute(bs);
-		} catch (Exception e) {
-			throw new BackendException("Could not perform a query. " + e.getMessage() + ".", e);
-		}
-
-		Row user = rs.one();
-		if (user != null) {
-			return user.getString("nodeId");
-		} else {
-			return null;
-		}
-	}
-
-	public void loginUser(String username, String nodeId) throws BackendException {
+	public void loginUser(String username) throws BackendException {
 		BoundStatement bs = new BoundStatement(INSERT_USER);
-		bs.bind(username, nodeId);
+		bs.bind(username);
 
 		try {
 			session.execute(bs);

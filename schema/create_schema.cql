@@ -5,15 +5,8 @@ USE DutchAuction;
 
 CREATE TABLE Users (
   username varchar,
-  nodeId varchar,
   PRIMARY KEY(username)
 );
-
-//CREATE TYPE bidder (
-//username varchar,
-//price double,
-//timestamp timestamp
-//);
 
 CREATE TABLE IF NOT EXISTS Auction (
   finished boolean,
