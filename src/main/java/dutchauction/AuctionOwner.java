@@ -30,14 +30,14 @@ public class AuctionOwner implements Runnable {
     private String winner;
     private Random random;
 
-    public AuctionOwner(BackendSession SESSION, String id, String productName, String productDescription, int priceDropFactor, int epoch, int epochPeriod, int initialPrice, String username, String nodeId) {
+    public AuctionOwner(BackendSession SESSION,  String productName, String productDescription, int priceDropFactor, int epoch, int epochPeriod, int initialPrice, String username, String nodeId) {
         this.SESSION = SESSION;
         this.username = username;
         try {
             // login user
             this.random = new Random();
             this.SESSION.loginUser(username, nodeId);
-            initNewAuction(id, productName,productDescription,priceDropFactor,epoch,epochPeriod,initialPrice);
+            initNewAuction(UUID.randomUUID().toString(), productName,productDescription,priceDropFactor,epoch,epochPeriod,initialPrice);
 
         } catch (BackendException e) {
             e.printStackTrace();
@@ -45,7 +45,7 @@ public class AuctionOwner implements Runnable {
     }
 
     public void initNewAuction(String id, String productName, String productDescription, int priceDropFactor, int epoch, int epochPeriod, int initialPrice) {
-        this.auctionId = id;
+        this.auctionId = id.replace("-","");
         this.productName = productName;
         this.productDescription = productDescription;
         this.priceDropFactor = priceDropFactor;
@@ -79,7 +79,7 @@ public class AuctionOwner implements Runnable {
 
     private void waitEpoch(){
         try {
-            Thread.sleep(epochPeriod * 50L);
+            Thread.sleep(epochPeriod * 100L);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -95,7 +95,7 @@ public class AuctionOwner implements Runnable {
             String[] split = bidder.getValue().split(";");
             int wantedPrice = Integer.parseInt(split[0]);
             LocalDateTime parsedDate = LocalDateTime.parse(split[1].replace('T',' '), dateTimeFormatter);
-            if (wantedPrice >= currentPrice) {
+            if (wantedPrice >= auction.getInt("current_price")) {
                 if (winnerDate == null || parsedDate.isBefore(winnerDate)){
                     winnerDate = parsedDate;
                     this.winner = bidder.getKey();

@@ -69,20 +69,19 @@ public class BackendSession {
 			SELECT_AUCTION = session.prepare("SELECT * FROM Auction WHERE finished = ? AND id = ?;");
 			SELECT_ALL_AUCTION = session.prepare("SELECT * FROM Auction;");
 
-			SELECT_ALL_RUNNING_AUCTION = session.prepare("SELECT * FROM Auction WHERE finished=false;");
+			SELECT_ALL_RUNNING_AUCTION = session.prepare("SELECT * FROM Auction WHERE finished = false;");
 			DELETE_AUCTION =
 					session.prepare("DELETE FROM Auction WHERE finished = ? AND id = ?;");
 			INSERT_AUCTION = session
 					.prepare("INSERT INTO Auction (finished, id, product_name, product_description, price_drop_factor, epoch, epoch_period, initial_price, current_price, owner) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
 			INSERT_WON_AUCTION = session
-					.prepare("INSERT INTO Auction (finished, id, product_name, product_description, price_drop_factor, epoch, epoch_period, initial_price, current_price, owner, winner)" +
-							" VALUES (true, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
-			BIDDER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET bidders = bidders + ? WHERE finished=false AND id = ?;");
-			OWNER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET winner = ? WHERE finished=false AND id = ?;");
+					.prepare("INSERT INTO Auction (finished, id, bidders, product_name, product_description, price_drop_factor, epoch, epoch_period, initial_price, current_price, owner, winner)" +
+							" VALUES (true, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
+			BIDDER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET bidders = bidders + ? WHERE finished = false AND id = ?;");
+			OWNER_UPDATE_AUCTION = session.prepare("UPDATE Auction SET winner = ? WHERE finished = false AND id = ?;");
 		} catch (Exception e) {
 			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
 		}
-
 		logger.info("Statements prepared");
 	}
 
@@ -142,7 +141,7 @@ public class BackendSession {
 
 	public Row getOneAuction(String id, boolean finished) throws BackendException {
 		BoundStatement bs = new BoundStatement(SELECT_AUCTION);
-		bs.bind(id);
+		bs.bind(finished, id);
 		ResultSet rs;
 		try {
 			rs = session.execute(bs);
@@ -150,6 +149,16 @@ public class BackendSession {
 			throw new BackendException("Could not perform a query. " + e.getMessage() + ".", e);
 		}
 		return rs.one();
+	}
+
+	public void deleteOneAuction(String id, boolean finished) throws BackendException {
+		BoundStatement bs = new BoundStatement(DELETE_AUCTION);
+		bs.bind(finished, id);
+		try {
+			session.execute(bs);
+		} catch (Exception e) {
+			throw new BackendException("Could not perform a query. " + e.getMessage() + ".", e);
+		}
 	}
 
 	public Row getOneAuction(String id) throws BackendException {
@@ -194,9 +203,10 @@ public class BackendSession {
 		Row auction = this.getOneAuction(auctionId, false);
 
 		BoundStatement bs = new BoundStatement(INSERT_WON_AUCTION);
-		bs.bind(auctionId, auction.getString("product_name"), auction.getString("product_description"),
-				auction.getString("price_drop_factor"), auction.getString("epoch"), auction.getString("epoch_period"),
-				auction.getString("initial_price"), auction.getString("current_price"),
+		bs.bind(auctionId, auction.getMap("bidders",String.class,String.class),
+				auction.getString("product_name"), auction.getString("product_description"),
+				auction.getInt("price_drop_factor"), auction.getInt("epoch"), auction.getInt("epoch_period"),
+				auction.getInt("initial_price"), auction.getInt("current_price"),
 				auction.getString("owner"), username);
 
 		BoundStatement deleteBS = new BoundStatement(DELETE_AUCTION);

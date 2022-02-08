@@ -15,7 +15,7 @@ CREATE TABLE Users (
 //timestamp timestamp
 //);
 
-CREATE TABLE Auction (
+CREATE TABLE IF NOT EXISTS Auction (
   finished boolean,
   id varchar,
   product_name varchar,

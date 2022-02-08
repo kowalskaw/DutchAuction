@@ -66,18 +66,25 @@ public class Bidder implements Runnable {
                 price = rand.nextInt(boundary-1)+1;
             }
             LocalDateTime timestamp = LocalDateTime.now();
-            SESSION.updateAuctionBidder(username, price, timestamp, auctionIds.get(0));
+            SESSION.updateAuctionBidder(username, price, timestamp, id);
         } catch (BackendException e) {
             e.printStackTrace();
         }
     }
 
-    private boolean checkResult(String id){
+    private boolean checkResult(String id, boolean finished) throws BackendException {
         Row row = null;
         try {
-            row = SESSION.getOneAuction(id);
+            row = SESSION.getOneAuction(id, finished);
         } catch (BackendException e) {
             e.printStackTrace();
+        }
+        if(row == null) {
+            return true;
+        }
+        if (row.getString("owner")==null) {
+            SESSION.deleteOneAuction(id,false);
+            return true;
         }
         if (row.getString("winner")==null){
             System.out.printf("<%s> Waiting... Current price %d and bidders:\n",username, row.getInt("current_price"));
@@ -105,34 +112,32 @@ public class Bidder implements Runnable {
     private void checkResultsPeriodically(String id) throws BackendException, InterruptedException {
         boolean finished = false;
         Row row = SESSION.getOneAuction(id);
-        int epoch =0;
-        if (row.getInt("epoch")!=0) {
-            epoch = row.getInt("epoch");
+        int epoch = 0;
+        if (row.getInt("epoch_period")!=0) {
+            epoch = row.getInt("epoch_period");
         }
         while(!finished){
-            Thread.sleep(epoch * 1000L);
-            finished = checkResult(id);
+            System.out.println(id);
+            Thread.sleep(epoch * 100L);
+            finished = checkResult(id, finished);
+            if (finished)
+                finished = checkResult(id, finished);
         }
         this.auctionIds = new ArrayList<String>(2){};
     }
 
     @Override
     public void run() {
-
         while(true) {
             randomizeAuctions();
-            // participate in 2 auctions
-            for (int i = 0; i < 2; i++) {
-                String id = auctionIds.get(i);
-                participateInAuction(id);
-                try {
-                    // check on results every 1 minute
-                    checkResultsPeriodically(id);
-                } catch (BackendException | InterruptedException e) {
-                    e.printStackTrace();
-                }
+            String id = auctionIds.get(rand.nextInt(auctionIds.size()));
+            participateInAuction(id);
+            try {
+                // check on results every 1 minute
+                checkResultsPeriodically(id);
+            } catch (BackendException | InterruptedException e) {
+                e.printStackTrace();
             }
-
         }
     }
 }
