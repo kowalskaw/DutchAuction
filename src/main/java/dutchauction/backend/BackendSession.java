@@ -1,14 +1,8 @@
 package dutchauction.backend;
 
+import com.datastax.driver.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -30,9 +24,18 @@ public class BackendSession {
 
 	private Session session;
 
-	public BackendSession(String contactPoint, String keyspace) throws BackendException {
+	public BackendSession(String contactPoint, String keyspace, int port) throws BackendException {
+		initSession(contactPoint, keyspace, port);
+	}
 
-		Cluster cluster = Cluster.builder().addContactPoint(contactPoint).build();
+	public BackendSession(String contactPoint, String keyspace) throws BackendException {
+		initSession(contactPoint, keyspace, 9042);
+	}
+
+	private void initSession(String contactPoint, String keyspace, int port) throws BackendException {
+		PlainTextAuthProvider authProvider = new PlainTextAuthProvider("cassandra","cassandra");
+
+		Cluster cluster = Cluster.builder().addContactPoint(contactPoint).withPort(port).withAuthProvider(authProvider).build();
 		try {
 			session = cluster.connect(keyspace);
 		} catch (Exception e) {
@@ -40,6 +43,7 @@ public class BackendSession {
 		}
 		prepareStatements();
 	}
+
 
 	private static PreparedStatement SELECT_USER;
 	private static PreparedStatement INSERT_USER;

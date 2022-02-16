@@ -16,17 +16,18 @@ public class PerformanceCheck {
     public PerformanceCheck() {
         String contactPoint = null;
         String keyspace = null;
-
+        int port = 9042;
         Properties properties = new Properties();
         try {
             properties.load(Main.class.getClassLoader().getResourceAsStream(PROPERTIES_FILENAME));
             contactPoint = properties.getProperty("contact_point");
             keyspace = properties.getProperty("keyspace");
+            port = Integer.parseInt(properties.getProperty("port"));
         } catch (IOException ex) {
             ex.printStackTrace();
         }
         try {
-            session = new BackendSession(contactPoint, keyspace);
+            session = new BackendSession(contactPoint, keyspace, port);
             owners = new Thread[50];
             bidders = new Thread[100];
 
