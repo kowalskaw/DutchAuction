@@ -38,6 +38,31 @@ public class BackendSession {
 		Cluster cluster = Cluster.builder().addContactPoint(contactPoint).withPort(port).withAuthProvider(authProvider).build();
 		try {
 			session = cluster.connect(keyspace);
+			session.execute("CREATE KEYSPACE IF NOT EXISTS DutchAuction\n" +
+					"  WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 3 };");
+			session.execute("DROP TABLE IF EXISTS Auction");
+			session.execute("CREATE TABLE IF NOT EXISTS Users (\n" +
+					"  username varchar,\n" +
+					"  PRIMARY KEY(username)\n" +
+					");"
+			);
+			session.execute(
+					"CREATE TABLE IF NOT EXISTS Auction (\n" +
+					"  finished boolean,\n" +
+					"  id varchar,\n" +
+					"  product_name varchar,\n" +
+					"  product_description varchar,\n" +
+					"  price_drop_factor int,  // constant, determines price drop\n" +
+					"  epoch int,     // number of epochs\n" +
+					"  epoch_period int, // time that epoch lasts\n" +
+					"  initial_price int,\n" +
+					"  current_price int,\n" +
+					"  winner varchar,\n" +
+					"  bidders map<varchar, varchar>, // map of bidders -> {\"username\" : \"proposed_price;timestamp\"}\n" +
+					"  owner varchar, // creator of the auction\n" +
+					"  PRIMARY KEY(finished, id)\n" +
+					");"
+			);
 		} catch (Exception e) {
 			throw new BackendException("Could not connect to the cluster. " + e.getMessage() + ".", e);
 		}
